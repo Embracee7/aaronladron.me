@@ -354,7 +354,7 @@
 
       <section class="game" id="game">
         <h2>En attendant… <span>défends la prod</span>
-          <small>Bug Invaders — les bugs tombent du ciel. Aucun ne doit atteindre la prod.</small>
+          <small>Bug Invaders — Python, Java, PHP & co tombent du ciel. Aucun ne doit atteindre la prod.</small>
         </h2>
 
         <div class="stage" id="stage" tabindex="0" aria-label="Mini-jeu Bug Invaders : clique ou appuie sur Espace pour lancer, déplace-toi à la souris, au doigt ou avec les flèches">
@@ -370,11 +370,10 @@
           </div>
         </div>
         <div class="tips">
-          <span>🐛 10 pts</span>
-          <span>🪲 30 pts (3 tirs)</span>
-          <span>NaN / null 20 pts</span>
+          <span>langage = 10 pts</span>
+          <span>Java, PHP, C++, AngularJS = 30 pts (3 tirs)</span>
           <span>☕ tir triple 6 s</span>
-          <span>bug en prod = −1 vie</span>
+          <span>langage en prod = −1 vie</span>
           <span>boss surprise à 1000 pts</span>
         </div>
       </section>
@@ -571,7 +570,34 @@
       [4000, "OK là c'est de l'acharnement 😅"],
       [6000, "Envoie-moi ton score par mail, sérieux"],
     ];
-    const WORDS = ["NaN", "null", "undefined", "segfault", "404", "TODO"];
+    // Langages qui tombent : q = la vanne affichée quand on le détruit, tank = 3 tirs, light = logo sombre
+    const DEVICON = "https://cdn.jsdelivr.net/gh/devicons/devicon@2.17.0/icons/";
+    const LANGS = [
+      { id: "python", q: "IndentationError" },
+      { id: "javascript", q: "[object Object]" },
+      { id: "typescript", q: "as any" },
+      { id: "nextjs", q: "'use client'", light: 1 },
+      { id: "git", q: "merge conflict" },
+      { id: "react", q: "useEffect ∞" },
+      { id: "docker", q: "ça marche dans le conteneur" },
+      { id: "rust", q: "borrow checker", light: 1 },
+      { id: "c", q: "segfault" },
+      { id: "html5", q: "pas un langage" },
+      { id: "css3", q: "!important" },
+      { id: "nodejs", q: "node_modules : 2 Go" },
+      { id: "go", q: "if err != nil" },
+      { id: "vuejs", q: "v-if v-else" },
+      { id: "linux", q: "sudo rm -rf /" },
+      { id: "csharp", q: "Microsoft™" },
+      { id: "kotlin", q: "Java en mieux" },
+      { id: "swift", q: "Xcode a crashé" },
+      { id: "java", q: "NullPointerException", tank: 1 },
+      { id: "php", q: "$hahaha", tank: 1 },
+      { id: "cplusplus", q: "template<T> hell", tank: 1 },
+      { id: "angularjs", q: "deprecated", tank: 1 },
+    ];
+    for (const l of LANGS) { l.img = new Image(); l.img.src = `${DEVICON}${l.id}/${l.id}-original.svg`; }
+    const NORMAL = LANGS.filter((l) => !l.tank), TANKS = LANGS.filter((l) => l.tank);
 
     function resize() {
       const r = cv.getBoundingClientRect();
@@ -639,17 +665,17 @@
     function lvl() { return 1 + score / 600; }
 
     function spawnEnemy() {
-      const L = lvl(), r = Math.random();
-      let e;
-      if (r < Math.min(.3, .06 + L * .03)) e = { kind: "emo", emo: "🪲", r: 20, hp: 3, pts: 30, vy: 40 + L * 8, size: 34 };
-      else if (r < Math.min(.5, .14 + L * .05)) {
-        const w = WORDS[(Math.random() * WORDS.length) | 0];
-        e = { kind: "word", word: w, r: 18, hp: 2, pts: 20, vy: 55 + L * 10, ww: w.length * 9 + 14 };
-      } else e = { kind: "emo", emo: "🐛", r: 14, hp: 1, pts: 10, vy: 65 + L * 13 + Math.random() * 30, size: 24 };
-      const m = (e.ww ? e.ww / 2 : e.r) + 8;
+      const L = lvl();
+      const tank = Math.random() < Math.min(.3, .08 + L * .04);
+      const pool = tank ? TANKS : NORMAL;
+      const lang = pool[(Math.random() * pool.length) | 0];
+      const e = tank
+        ? { lang, r: 22, hp: 3, pts: 30, vy: 40 + L * 8, size: 34 }
+        : { lang, r: 17, hp: 1, pts: 10, vy: 65 + L * 13 + Math.random() * 30, size: 26 };
+      const m = e.r + 10;
       e.bx = m + Math.random() * Math.max(1, W - 2 * m);
       e.amp = Math.random() * Math.min(40, e.bx - m, W - m - e.bx);
-      e.x = e.bx; e.y = -24; e.t = Math.random() * 6; e.f = 1 + Math.random() * 2; e.flash = 0;
+      e.x = e.bx; e.y = -26; e.t = Math.random() * 6; e.f = 1 + Math.random() * 2; e.flash = 0;
       enemies.push(e);
     }
 
@@ -704,8 +730,8 @@
       // enemies
       for (const e of enemies) {
         e.t += dt; e.y += e.vy * dt; e.x = e.bx + Math.sin(e.t * e.f) * e.amp; e.flash -= dt;
-        if (e.y > H + 10) { e.dead = true; loseLife("Bug passé en prod !"); }
-        else if (Math.hypot(e.x - ship.x, e.y - ship.y) < e.r + 13) { e.dead = true; burst(e.x, e.y, 14, COL.r); loseLife("Collision avec un bug !"); }
+        if (e.y > H + 10) { e.dead = true; loseLife(`${e.lang.id} est passé en prod !`); }
+        else if (Math.hypot(e.x - ship.x, e.y - ship.y) < e.r + 13) { e.dead = true; burst(e.x, e.y, 14, COL.r); loseLife(`Percuté par ${e.lang.id} !`); }
       }
 
       // boss
@@ -732,13 +758,12 @@
       for (const b of bullets) {
         for (const e of enemies) {
           if (e.dead) continue;
-          const hw = e.ww ? e.ww / 2 : e.r;
-          if (Math.abs(b.x - e.x) < hw + 3 && Math.abs(b.y - e.y) < e.r + 4) {
+          if (Math.abs(b.x - e.x) < e.r + 4 && Math.abs(b.y - e.y) < e.r + 4) {
             b.dead = true; e.hp--; e.flash = .08; burst(b.x, b.y, 4, COL.y);
             if (e.hp <= 0) {
               e.dead = true; score += e.pts;
-              burst(e.x, e.y, 16, e.kind === "word" ? COL.r : COL.ok);
-              floatText(e.x, e.y, "+" + e.pts);
+              burst(e.x, e.y, 18, e.lang.tank ? COL.r : COL.ok);
+              floatText(e.x, e.y, `+${e.pts} ${e.lang.q}`);
             }
             break;
           }
@@ -819,22 +844,24 @@
       for (const c of coffees) emoji("☕", c.x, c.y, 22);
 
       for (const e of enemies) {
-        if (e.kind === "word") {
-          ctx.save();
-          ctx.fillStyle = e.flash > 0 ? "#fff" : "rgba(255,42,109,.15)";
-          ctx.strokeStyle = COL.r; ctx.lineWidth = 1;
-          ctx.shadowColor = COL.r; ctx.shadowBlur = 10;
-          ctx.fillRect(e.x - e.ww / 2, e.y - 12, e.ww, 24);
-          ctx.strokeRect(e.x - e.ww / 2 + .5, e.y - 11.5, e.ww - 1, 23);
-          ctx.shadowBlur = 0;
-          ctx.font = `14px ${MONO}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-          ctx.fillStyle = COL.r; ctx.fillText(e.word, e.x, e.y + 1);
-          ctx.restore();
-        } else {
-          if (e.flash > 0) { ctx.globalAlpha = .5; }
-          emoji(e.emo, e.x, e.y, e.size, Math.PI + Math.sin(e.t * 6) * .15);
-          ctx.globalAlpha = 1;
+        const ring = e.lang.tank ? COL.r : COL.c;
+        ctx.save();
+        ctx.translate(e.x, e.y); ctx.rotate(Math.sin(e.t * 3) * .18);
+        ctx.shadowColor = ring; ctx.shadowBlur = 14;
+        ctx.fillStyle = e.flash > 0 ? "#ffffff" : e.lang.light ? "rgba(230,251,255,.92)" : "rgba(7,10,18,.88)";
+        ctx.beginPath(); ctx.arc(0, 0, e.r + 4, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0; ctx.strokeStyle = ring; ctx.lineWidth = 1.5; ctx.stroke();
+        const img = e.lang.img;
+        if (img.complete && img.naturalWidth) ctx.drawImage(img, -e.size / 2, -e.size / 2, e.size, e.size);
+        else {
+          ctx.font = `bold 11px ${MONO}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.fillStyle = ring; ctx.fillText(e.lang.id.slice(0, 4), 0, 1);
         }
+        if (e.lang.tank && e.hp < 3) {
+          ctx.fillStyle = COL.y;
+          for (let i = 0; i < e.hp; i++) ctx.fillRect(-7 + i * 6, e.r + 8, 4, 3);
+        }
+        ctx.restore();
       }
 
       if (boss) {
@@ -866,7 +893,11 @@
       for (const p of parts) { ctx.globalAlpha = Math.max(0, p.life * 1.6); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); }
       ctx.globalAlpha = 1;
       ctx.font = `bold 13px ${MONO}`; ctx.textAlign = "center";
-      for (const t of texts) { ctx.globalAlpha = Math.max(0, t.life); ctx.fillStyle = t.color; ctx.fillText(t.t, t.x, t.y); }
+      for (const t of texts) {
+        const hw = ctx.measureText(t.t).width / 2 + 6;
+        ctx.globalAlpha = Math.max(0, t.life); ctx.fillStyle = t.color;
+        ctx.fillText(t.t, Math.min(Math.max(t.x, hw), W - hw), t.y);
+      }
       ctx.globalAlpha = 1;
       ctx.restore();
     }
